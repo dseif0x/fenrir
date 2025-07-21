@@ -46,6 +46,14 @@ var (
 
 		return "ghcr.io/games-on-whales/wolf:dev-moonlight-fixes"
 	}()
+
+	STORAGE_CLASS_NAME = func() string {
+		if im := os.Getenv("STORAGE_CLASS_NAME"); im != "" {
+			return im
+		}
+
+		return "openebs-hostpath"
+	}()
 )
 
 type userGame struct {
@@ -1206,7 +1214,7 @@ func (c *SessionController) reconcilePVC(ctx context.Context, session *v1alpha1t
 			WithSpec(
 				v1ac.PersistentVolumeClaimSpec().
 					WithAccessModes("ReadWriteOnce").
-					WithStorageClassName("openebs-hostpath").
+					WithStorageClassName(STORAGE_CLASS_NAME).
 					WithResources(v1ac.VolumeResourceRequirements().
 						WithRequests(corev1.ResourceList{
 							corev1.ResourceStorage: resource.MustParse("100Gi"),
