@@ -25,6 +25,16 @@ import (
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
+var (
+	HOSTNAME = func() string {
+		if im := os.Getenv("EXTERNAL_HOSTNAME"); im != "" {
+			return im
+		}
+
+		return "127.0.0.1:47989"
+	}()
+)
+
 func hardcodedPin() (string, bool) {
 	val, ok := os.LookupEnv("HARDCODED_PIN")
 	if !ok {
@@ -156,7 +166,7 @@ func (m *PairingManager) pairPhase1(cacheKey string, salt string, clientCertStr 
 	m.PendingPins.Store(pinSecretHex, pinChannel)
 
 	//!TODO: Get proper hostname
-	klog.Infof("Insert pin at http://%s/pin/#%s", "127.0.0.1:47989", pinSecretHex)
+	klog.Infof("Insert pin at http://%s/pin/#%s", HOSTNAME, pinSecretHex)
 
 	// Hardcoded pin for testing in debug builds if debugger is attached
 	var pin string
