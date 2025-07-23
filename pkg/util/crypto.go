@@ -12,6 +12,26 @@ import (
 	"math/big"
 )
 
+func GenerateAppID(title string) int32 {
+	hash := hash(title)
+	return int32Abs(int32(hash))
+}
+
+func hash(data string) uint32 {
+	var hash uint32 = 5385
+	for _, c := range data {
+		hash = ((hash << 5) + hash) + uint32(c) // hash * 33 + c
+	}
+	return hash
+}
+
+func int32Abs(i int32) int32 {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
+
 func SecureRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)

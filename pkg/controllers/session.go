@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"games-on-whales.github.io/direwolf/pkg/api/v1alpha1"
@@ -81,7 +82,9 @@ type SessionController struct {
 	SessionClient   v1alpha1client.SessionInterface
 	SessionInformer generic.Informer[*v1alpha1types.Session]
 
-	AppInformer  generic.Informer[*v1alpha1types.App]
+	AppClient   v1alpha1client.AppInterface
+	AppInformer generic.Informer[*v1alpha1types.App]
+
 	UserInformer generic.Informer[*v1alpha1types.User]
 
 	TCPRouteClient gatewayv1alpha2.TCPRouteInterface
@@ -1335,6 +1338,11 @@ func (c *SessionController) reconcileActiveStreams(
 	}
 
 	if !found {
+		game, err := c.AppClient.Get(ctx, session.Spec.GameReference.Name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get game: %s", err)
+		}
+
 		//!TODO: Add the ports into the request for this to support multiple
 		// sessions per Gateway.
 		//
@@ -1343,7 +1351,7 @@ func (c *SessionController) reconcileActiveStreams(
 			VideoWidth:        session.Spec.Config.VideoWidth,
 			VideoHeight:       session.Spec.Config.VideoHeight,
 			VideoRefreshRate:  session.Spec.Config.VideoRefreshRate,
-			AppID:             "1",
+			AppID:             strconv.Itoa(int(util.GenerateAppID(game.Spec.Title))),
 			AudioChannelCount: 2, // !TODO: parse from audio info
 			ClientIP:          "10.128.1.0",
 			ClientSettings: wolfapi.ClientSettings{
