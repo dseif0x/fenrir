@@ -216,7 +216,7 @@ func (s *RESTServer) serverInfoHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			currentGame = fmt.Sprint(currentApp.Spec.ID)
+			currentGame = fmt.Sprint(generateAppID(currentApp))
 		}
 		pairStatus = 1
 	}
@@ -752,7 +752,7 @@ func (s *RESTServer) getAppByID(appID string) (*v1alpha1types.App, error) {
 	}
 
 	for _, app := range apps {
-		if app.Spec.ID == intParsedAppID {
+		if int(generateAppID(app)) == intParsedAppID {
 			return app, nil
 		}
 	}
