@@ -34,6 +34,8 @@ func GetKubernetesClients() (
 		return nil, nil, nil, nil, fmt.Errorf("error building kubeconfig: %w", err)
 	}
 
+	config.QPS = 50
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("error creating clientset: %w", err)

@@ -97,7 +97,6 @@ func New(c rest.Interface) *DirewolfV1alpha1Client {
 
 func setConfigDefaults(config *rest.Config) {
 	gv := apiv1alpha1.SchemeGroupVersion
-	config.QPS = 50
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
