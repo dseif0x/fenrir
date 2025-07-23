@@ -99,6 +99,10 @@ type SessionInfo struct {
 
 	//+kubebuilder:validation:Required
 	SurroundAudioFlags int `json:"surroundAudioFlags,omitempty"`
+
+	//+kubebuilder:validation:Required
+	// The fake IP address used for the RTSP stream.
+	RTSPFakeIP string `json:"rtspFakeIP,omitempty"`
 }
 
 // Each session will have 4 ports allocated to it on the shared gateway.

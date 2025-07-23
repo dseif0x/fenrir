@@ -59,6 +59,9 @@ spec:
                     type: string
                   aesKey:
                     type: string
+                  rtspFakeIP:
+                    description: The fake IP address used for the RTSP stream.
+                    type: string
                   surroundAudioFlags:
                     type: integer
                   videoHeight:
@@ -70,6 +73,7 @@ spec:
                 required:
                 - aesIV
                 - aesKey
+                - rtspFakeIP
                 - surroundAudioFlags
                 - videoHeight
                 - videoRefreshRate

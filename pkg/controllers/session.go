@@ -1354,8 +1354,9 @@ func (c *SessionController) reconcileActiveStreams(
 				VScrollAcceleration: 1.0,
 				HScrollAcceleration: 1.0,
 			},
-			AESKey: session.Spec.Config.AESKey,
-			AESIV:  session.Spec.Config.AESIV,
+			AESKey:     session.Spec.Config.AESKey,
+			AESIV:      session.Spec.Config.AESIV,
+			RTSPFakeIp: session.Spec.Config.RTSPFakeIP,
 			//!TODO: not this. This is the hash of the client cert we are
 			// hardcoding into wolf config. Should call pair endpoint to genuinely
 			// add it. Though not really needed since user doesnt connect via HTTPS

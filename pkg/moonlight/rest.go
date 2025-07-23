@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"image/png"
 	"io"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -451,6 +452,13 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ip := fmt.Sprintf("%d.%d.%d.%d",
+		rand.Intn(256),
+		rand.Intn(256),
+		rand.Intn(256),
+		rand.Intn(256),
+	)
+
 	klog.Infof("Launching app %s for user %s", app.ObjectMeta.Name, user.ObjectMeta.Name)
 	session, err := s.SessionClient.Create(
 		r.Context(),
@@ -489,6 +497,7 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 					VideoWidth:         width,
 					VideoHeight:        height,
 					VideoRefreshRate:   refreshRate,
+					RTSPFakeIP:         ip,
 				},
 			},
 		},
