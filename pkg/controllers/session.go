@@ -898,6 +898,11 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 					Name:      "wolf-runtime",
 					MountPath: "/tmp/.X11-unix",
 				},
+				{
+					Name:      "certs",
+					MountPath: "/etc/certs",
+					ReadOnly:  true,
+				},
 			},
 		},
 		corev1.Container{
@@ -1071,6 +1076,14 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 				HostPath: &corev1.HostPathVolumeSource{
 					Path: "/run/udev",
 					Type: ptr.To(corev1.HostPathDirectory),
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "certs",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "fenrir-tls",
 				},
 			},
 		},
