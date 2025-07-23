@@ -558,7 +558,7 @@ func (c *SessionController) reconcileService(ctx context.Context, session *v1alp
 					// Try to support popular service LoadBalancer implementation
 					// sharing key annotations.
 					"lbipam.cilium.io/sharing-key":        c.LBSharingKey,
-					"metallb.universe.tf/allow-shared-ip": c.LBSharingKey,
+					"metallb.io/allow-shared-ip": c.LBSharingKey,
 				}).
 				WithLabels(
 					map[string]string{
