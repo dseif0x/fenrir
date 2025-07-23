@@ -557,8 +557,8 @@ func (c *SessionController) reconcileService(ctx context.Context, session *v1alp
 				WithAnnotations(map[string]string{
 					// Try to support popular service LoadBalancer implementation
 					// sharing key annotations.
-					"lbipam.cilium.io/sharing-key":        c.LBSharingKey,
-					"metallb.io/allow-shared-ip": c.LBSharingKey,
+					"lbipam.cilium.io/sharing-key": c.LBSharingKey,
+					"metallb.io/allow-shared-ip":   c.LBSharingKey,
 				}).
 				WithLabels(
 					map[string]string{
@@ -814,6 +814,8 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 			Args: []string{
 				"--socket=/etc/wolf/wolf.sock",
 				"--port=8443",
+				"--tls-cert=/etc/certs/tls.crt",
+				"--tls-key=/etc/certs/tls.key",
 			},
 			Ports: []corev1.ContainerPort{
 				{
