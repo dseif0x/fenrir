@@ -44,6 +44,26 @@ type RESTServerOptions struct {
 	Cert       tls.Certificate
 }
 
+func generateAppID(app *v1alpha1types.App) int32 {
+	hash := hash(app.Spec.Title)
+	return int32Abs(int32(hash))
+}
+
+func hash(data string) uint32 {
+	var hash uint32 = 5385
+	for _, c := range data {
+		hash = ((hash << 5) + hash) + uint32(c) // hash * 33 + c
+	}
+	return hash
+}
+
+func int32Abs(i int32) int32 {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
+
 type RESTServer struct {
 	router       *http.ServeMux
 	secureRouter *http.ServeMux
@@ -358,6 +378,7 @@ func (s *RESTServer) appListHandler(w http.ResponseWriter, r *http.Request) {
 
 	appsList := make([]App, 0, len(apps))
 	for _, app := range apps {
+		app.Spec.ID = int(generateAppID(app))
 		appsList = append(appsList, App{
 			AppSpec: app.Spec,
 		})

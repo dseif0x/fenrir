@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"strconv"
 	"time"
 
 	"games-on-whales.github.io/direwolf/pkg/api/v1alpha1"
@@ -1388,7 +1387,6 @@ func GenerateWolfConfig(
 	if len(config.Title) == 0 {
 		config.Title = app.Spec.Title
 	}
-	config.ID = strconv.Itoa(app.Spec.ID)
 
 	if config.StartAudioServer == nil {
 		config.StartAudioServer = ptr.To(true)
