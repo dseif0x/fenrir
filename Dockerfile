@@ -1,4 +1,10 @@
-FROM golang:1.24 AS builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.24 AS builder
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
 ARG CGO_ENABLED=0
 ARG APP_NAME
 WORKDIR /app
@@ -7,7 +13,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN go build -o /app/$APP_NAME ./cmd/$APP_NAME
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /app/$APP_NAME ./cmd/$APP_NAME
 
 # Second stage: minimal runtime
 FROM alpine:3.21.3 AS output
