@@ -1547,7 +1547,7 @@ func (c *SessionController) reconcileActiveStreams(
 	klog.Infof("Deployment status for %s/%s: ObservedGeneration=%d, Generation=%d, ReadyReplicas=%d, Replicas=%d", session.Namespace, deploymentName, deployment.Status.ObservedGeneration, deployment.Generation, deployment.Status.ReadyReplicas, deployment.Status.Replicas)
 
 	if deployment.Status.ObservedGeneration != deployment.Generation ||
-		deployment.Status.ReadyReplicas != deployment.Spec.Replicas {
+		deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 		return fmt.Errorf("deployment %s/%s not ready (Observed %d, Latest %d) (%d/%d)", session.Namespace, deploymentName, deployment.Status.ObservedGeneration, deployment.Generation, deployment.Status.ReadyReplicas, deployment.Status.Replicas)
 	}
 
