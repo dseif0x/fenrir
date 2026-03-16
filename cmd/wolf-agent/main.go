@@ -120,10 +120,16 @@ func main() {
 			return
 		}
 		request, err := http.NewRequest(r.Method, url, r.Body)
-		request.Proto = r.Proto
-		request.ProtoMajor = r.ProtoMajor
-		request.ProtoMinor = r.ProtoMinor
-		request.TransferEncoding = r.TransferEncoding
+		request.Proto = "HTTP/1.0"
+		request.ProtoMajor = 1
+		request.ProtoMinor = 0
+
+		// Copy headers but strip hop-by-hop headers that shouldn't be forwarded
+		request.Header = r.Header.Clone()
+		request.Header.Del("Transfer-Encoding") // Don't forward chunked TE
+		request.Header.Del("Connection")
+		request.Header.Del("Upgrade")
+
 		request.ContentLength = r.ContentLength
 		if err != nil {
 			klog.ErrorS(err, "Failed to create proxy request")
@@ -208,6 +214,9 @@ func UnixHTTPClient(sockAddr string) http.Client {
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return net.Dial("unix", sockAddr)
 			},
+			DisableCompression:  true,
+			DisableKeepAlives:   true,
+			ForceAttemptHTTP2:   false,
 		},
 	}
 }
