@@ -120,6 +120,12 @@ func main() {
 			return
 		}
 		request, err := http.NewRequest(r.Method, url, r.Body)
+		if err != nil {
+			klog.ErrorS(err, "Failed to create proxy request")
+			http.Error(w, fmt.Sprintf("Failed to create proxy request: %v", err), http.StatusInternalServerError)
+			return
+		}
+
 		request.Proto = "HTTP/1.0"
 		request.ProtoMajor = 1
 		request.ProtoMinor = 0
@@ -131,12 +137,6 @@ func main() {
 		request.Header.Del("Upgrade")
 
 		request.ContentLength = r.ContentLength
-		if err != nil {
-			klog.ErrorS(err, "Failed to create proxy request")
-			http.Error(w, fmt.Sprintf("Failed to create proxy request: %v", err), http.StatusInternalServerError)
-			return
-		}
-		request.Header = r.Header.Clone()
 
 		// Send the request to the wolf.sock
 		klog.Info("Sending request to wolf.sock:", request.Method, request.URL.Path)
