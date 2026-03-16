@@ -127,6 +127,9 @@ func (c *client) ListSessions(ctx context.Context) ([]Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Proto = "HTTP/1.0"
+	req.ProtoMajor = 1
+	req.ProtoMinor = 0
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
