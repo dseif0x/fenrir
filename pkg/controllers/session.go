@@ -1566,6 +1566,9 @@ func (c *SessionController) reconcileActiveStreams(
 	wolfclient := wolfapi.NewClient(fmt.Sprintf("https://%s:8443", service.Spec.ClusterIP), &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			DisableCompression:  true,
+			DisableKeepAlives:   true,
+			ForceAttemptHTTP2:   false,
 		},
 	})
 	sessions, err := wolfclient.ListSessions(ctx)
