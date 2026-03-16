@@ -1535,6 +1535,7 @@ func (c *SessionController) reconcileActiveStreams(
 	ctx context.Context,
 	session *v1alpha1types.Session,
 ) error {
+	klog.Infof("Reconciling active streams for session %s/%s", session.Namespace, session.Name)
 	deploymentName := c.deploymentName(session)
 
 	// !TODO: Use informer for cache reads instead?
@@ -1542,6 +1543,8 @@ func (c *SessionController) reconcileActiveStreams(
 	if err != nil {
 		return fmt.Errorf("failed to get deployment: %s", err)
 	}
+
+	klog.Infof("Deployment status for %s/%s: ObservedGeneration=%d, Generation=%d, ReadyReplicas=%d, Replicas=%d", session.Namespace, deploymentName, deployment.Status.ObservedGeneration, deployment.Generation, deployment.Status.ReadyReplicas, deployment.Status.Replicas)
 
 	if deployment.Status.ObservedGeneration != deployment.Generation ||
 		deployment.Status.ReadyReplicas != deployment.Status.Replicas {
@@ -1553,6 +1556,8 @@ func (c *SessionController) reconcileActiveStreams(
 	if err != nil {
 		return fmt.Errorf("failed to get service: %s", err)
 	}
+
+	klog.Infof("Service status for %s/%s: ClusterIP=%s", session.Namespace, session.Status.ServiceName, service.Spec.ClusterIP)
 
 	// List all the "sessions".
 	// Ensure they match each of our k8s sessions. Hash on AESKey/IV
@@ -1567,6 +1572,8 @@ func (c *SessionController) reconcileActiveStreams(
 	if err != nil {
 		return fmt.Errorf("failed to list sessions: %s", err)
 	}
+
+	klog.Infof("Found %d sessions in wolf for %s/%s", len(sessions), session.Namespace, session.Name)
 
 	keyIVHash := util.Hash([]byte(session.Spec.Config.AESKey), []byte(session.Spec.Config.AESIV))
 	var found bool
