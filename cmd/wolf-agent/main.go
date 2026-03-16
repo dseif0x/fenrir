@@ -142,12 +142,15 @@ func main() {
 		}
 		defer response.Body.Close()
 
+		klog.InfoS("Received response from wolf.sock", "statusCode", response.StatusCode)
+
 		// Write the response back to the client
 		for key, values := range response.Header {
 			for _, value := range values {
 				w.Header().Add(key, value)
 			}
 		}
+		klog.Info("Flushing headers to client")
 		w.WriteHeader(response.StatusCode)
 		flusher, ok := w.(http.Flusher)
 		if !ok {
