@@ -158,10 +158,13 @@ func main() {
 			return
 		}
 
+		klog.Info("Streaming response body to client")
+
 		// Stream response body manually. io.Copy doesn't eagerly flush
 		// which breaks SSE stream.
 		buf := make([]byte, 4096)
 		for {
+			klog.Info("Reading from response body...")
 			n, err := response.Body.Read(buf)
 			if n > 0 {
 				_, writeErr := w.Write(buf[:n])
@@ -178,6 +181,7 @@ func main() {
 				klog.ErrorS(err, "Error reading from backend")
 				return
 			}
+			klog.InfoS("Read chunk from response body", "chunkSize", n)
 		}
 		klog.InfoS("Request completed", "statusCode", response.StatusCode)
 	})
