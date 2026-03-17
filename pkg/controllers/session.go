@@ -1724,7 +1724,7 @@ func (c *SessionController) reconcileActiveStreams(
 			// to wolf, we just need a client ID wolf accepts for this specific
 			// pairing/client...
 			ClientID:   "4193251087262667199",
-			RTSPFakeIP: service.Spec.ClusterIP,
+			RTSPFakeIP: service.Spec.LoadBalancerIP,
 		})
 
 		if err != nil {
