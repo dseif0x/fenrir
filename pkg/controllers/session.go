@@ -17,6 +17,8 @@ import (
 	"games-on-whales.github.io/direwolf/pkg/generic"
 	"games-on-whales.github.io/direwolf/pkg/util"
 	"games-on-whales.github.io/direwolf/pkg/wolfapi"
+	"github.com/pelletier/go-toml/v2"
+
 	// "github.com/pelletier/go-toml/v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -277,22 +279,22 @@ func (c *SessionController) Reconcile(namespace, name string, newObj *v1alpha1ty
 		})
 	}
 
-	// configError := c.reconcileConfigMap(context.TODO(), newObj)
-	// if configError != nil {
-	// 	klog.Errorf("Failed to reconcile configmap: %s", configError)
-	// 	meta.SetStatusCondition(&newObj.Status.Conditions, metav1.Condition{
-	// 		Type:    "ConfigMapCreated",
-	// 		Status:  metav1.ConditionFalse,
-	// 		Reason:  "ConfigMapCreationFailed",
-	// 		Message: configError.Error(),
-	// 	})
-	// } else {
-	// 	meta.SetStatusCondition(&newObj.Status.Conditions, metav1.Condition{
-	// 		Type:   "ConfigMapCreated",
-	// 		Status: metav1.ConditionTrue,
-	// 		Reason: "Success",
-	// 	})
-	// }
+	configError := c.reconcileConfigMap(context.TODO(), newObj)
+	if configError != nil {
+		klog.Errorf("Failed to reconcile configmap: %s", configError)
+		meta.SetStatusCondition(&newObj.Status.Conditions, metav1.Condition{
+			Type:    "ConfigMapCreated",
+			Status:  metav1.ConditionFalse,
+			Reason:  "ConfigMapCreationFailed",
+			Message: configError.Error(),
+		})
+	} else {
+		meta.SetStatusCondition(&newObj.Status.Conditions, metav1.Condition{
+			Type:   "ConfigMapCreated",
+			Status: metav1.ConditionTrue,
+			Reason: "Success",
+		})
+	}
 
 	if pvcError := c.reconcilePVC(context.TODO(), newObj); pvcError != nil {
 		klog.Errorf("Failed to reconcile pvc: %s", pvcError)
@@ -900,7 +902,7 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 				chown -R ubuntu:ubuntu /tmp/.X11-unix
 				chmod 1777 -R /tmp/.X11-unix
 				mkdir -p /etc/wolf/cfg
-				# cp -LR /cfg/* /etc/wolf/cfg
+				cp -LR /cfg/* /etc/wolf/cfg
 				chown -R ubuntu:ubuntu /etc/wolf
 				chmod 777 -R /etc/wolf
 			`,
@@ -923,10 +925,10 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 					Name:      "wolf-runtime",
 					MountPath: "/tmp/.X11-unix",
 				},
-				// {
-				// 	Name:      "config",
-				// 	MountPath: "/cfg",
-				// },
+				{
+					Name:      "config",
+					MountPath: "/cfg",
+				},
 			},
 		},
 	)
@@ -1202,16 +1204,16 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 	}
 
 	podToCreate.Spec.Volumes = append(podToCreate.Spec.Volumes,
-		// corev1.Volume{
-		// 	Name: "config",
-		// 	VolumeSource: corev1.VolumeSource{
-		// 		ConfigMap: &corev1.ConfigMapVolumeSource{
-		// 			LocalObjectReference: corev1.LocalObjectReference{
-		// 				Name: c.deploymentName(session),
-		// 			},
-		// 		},
-		// 	},
-		// },
+		corev1.Volume{
+			Name: "config",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: c.deploymentName(session),
+					},
+				},
+			},
+		},
 		// corev1.Volume{
 		// 	Name: "wolf-tls-secret",
 		// 	VolumeSource: corev1.VolumeSource{
@@ -1333,61 +1335,61 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 	return nil
 }
 
-// func (c *SessionController) reconcileConfigMap(
-// 	ctx context.Context,
-// 	session *v1alpha1types.Session,
-// ) error {
-// 	app, err := c.AppInformer.Namespaced(session.Namespace).Get(session.Spec.GameReference.Name)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to get app: %s", err)
-// 	}
+func (c *SessionController) reconcileConfigMap(
+	ctx context.Context,
+	session *v1alpha1types.Session,
+) error {
+	app, err := c.AppInformer.Namespaced(session.Namespace).Get(session.Spec.GameReference.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get app: %s", err)
+	}
 
-// 	user, err := c.UserInformer.Namespaced(session.Namespace).Get(session.Spec.UserReference.Name)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to get user: %s", err)
-// 	}
+	user, err := c.UserInformer.Namespaced(session.Namespace).Get(session.Spec.UserReference.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %s", err)
+	}
 
-// 	wolfConfig, err := GenerateWolfConfig(app)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to generate wolf config: %s", err)
-// 	}
-// 	deploymentName := c.deploymentName(session)
+	wolfConfig, err := GenerateWolfConfig(app)
+	if err != nil {
+		return fmt.Errorf("failed to generate wolf config: %s", err)
+	}
+	deploymentName := c.deploymentName(session)
 
-// 	_, err = c.K8sClient.CoreV1().
-// 		ConfigMaps(session.Namespace).
-// 		Apply(
-// 			context.Background(),
-// 			v1ac.ConfigMap(deploymentName, session.Namespace).
-// 				WithLabels(
-// 					map[string]string{
-// 						"app":           "direwolf-worker",
-// 						"direwolf/app":  session.Spec.GameReference.Name,
-// 						"direwolf/user": session.Spec.UserReference.Name,
-// 					}).
-// 				WithOwnerReferences(
-// 					metav1ac.OwnerReference().
-// 						WithName(app.Name).
-// 						WithAPIVersion(v1alpha1.GroupVersion.String()).
-// 						WithKind("App").
-// 						WithUID(app.UID).
-// 						WithController(true),
-// 					metav1ac.OwnerReference().
-// 						WithName(user.Name).
-// 						WithAPIVersion(v1alpha1.GroupVersion.String()).
-// 						WithKind("User").
-// 						WithUID(user.UID),
-// 				).
-// 				WithData(map[string]string{
-// 					"config.toml": wolfConfig,
-// 				}),
-// 			metav1.ApplyOptions{
-// 				FieldManager: "direwolf-session-controller",
-// 			})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to apply configmap: %s", err)
-// 	}
-// 	return nil
-// }
+	_, err = c.K8sClient.CoreV1().
+		ConfigMaps(session.Namespace).
+		Apply(
+			context.Background(),
+			v1ac.ConfigMap(deploymentName, session.Namespace).
+				WithLabels(
+					map[string]string{
+						"app":           "direwolf-worker",
+						"direwolf/app":  session.Spec.GameReference.Name,
+						"direwolf/user": session.Spec.UserReference.Name,
+					}).
+				WithOwnerReferences(
+					metav1ac.OwnerReference().
+						WithName(app.Name).
+						WithAPIVersion(v1alpha1.GroupVersion.String()).
+						WithKind("App").
+						WithUID(app.UID).
+						WithController(true),
+					metav1ac.OwnerReference().
+						WithName(user.Name).
+						WithAPIVersion(v1alpha1.GroupVersion.String()).
+						WithKind("User").
+						WithUID(user.UID),
+				).
+				WithData(map[string]string{
+					"config.toml": wolfConfig,
+				}),
+			metav1.ApplyOptions{
+				FieldManager: "direwolf-session-controller",
+			})
+	if err != nil {
+		return fmt.Errorf("failed to apply configmap: %s", err)
+	}
+	return nil
+}
 
 func (c *SessionController) reconcilePVC(ctx context.Context, session *v1alpha1types.Session) error {
 	user, err := c.UserInformer.Namespaced(session.Namespace).Get(session.Spec.UserReference.Name)
@@ -1737,4 +1739,127 @@ func (c *SessionController) reconcileActiveStreams(
 
 	session.Status.StreamURL = fmt.Sprintf("rtsp://%s:%d", service.Spec.ClusterIP, session.Status.Ports.RTSP)
 	return nil
+}
+
+func GenerateWolfConfig(
+	app *v1alpha1.App,
+) (string, error) {
+	config := app.Spec.WolfConfig
+
+	if len(config.Title) == 0 {
+		config.Title = app.Spec.Title
+	}
+
+	if config.StartAudioServer == nil {
+		config.StartAudioServer = ptr.To(true)
+	}
+
+	if config.StartVirtualCompositor == nil {
+		config.StartVirtualCompositor = ptr.To(true)
+	}
+
+	if config.Runner == nil {
+		config.Runner = &v1alpha1.WolfRunnerConfig{
+			Type:       "process",
+			RunCommand: "sh -c \"while :; do echo 'running...'; sleep 10; done\"",
+		}
+	}
+
+	var gstreamerConfig = map[string]interface{}{
+		"audio": map[string]interface{}{
+			"default_audio_params": "queue max-size-buffers=3 leaky=downstream ! audiorate ! audioconvert",
+			"default_opus_encoder": "opusenc bitrate={bitrate} bitrate-type=cbr frame-size={packet_duration} bandwidth=fullband audio-type=restricted-lowdelay max-payload-size=1400",
+			"default_sink": `rtpmoonlightpay_audio name=moonlight_pay packet_duration={packet_duration} encrypt=true aes_key="{aes_key}" aes_iv="{aes_iv}" !
+	udpsink bind-port={host_port} host={client_ip} port={client_port} sync=true`,
+			"default_source": "interpipesrc listen-to={session_id}_audio is-live=true stream-sync=restart-ts max-bytes=0 max-buffers=3 block=false",
+		},
+		"video": map[string]interface{}{
+			"default_sink": `rtpmoonlightpay_video name=moonlight_pay payload_size={payload_size} fec_percentage={fec_percentage} min_required_fec_packets={min_required_fec_packets} !
+	udpsink bind-port={host_port} host={client_ip} port={client_port} sync=true`,
+			"default_source": "interpipesrc listen-to={session_id}_video is-live=true stream-sync=restart-ts max-buffers=1 block=false",
+			"defaults": map[string]interface{}{
+				"nvcodec": map[string]interface{}{
+					"video_params": "queue leaky=downstream max-size-buffers=1 ! cudaupload ! cudaconvertscale ! video/x-raw(memory:CUDAMemory), width={width}, height={height}, chroma-site={color_range}, format=NV12, colorimetry={color_space}, pixel-aspect-ratio=1/1",
+				},
+				"qsv": map[string]interface{}{
+					"video_params": "queue leaky=downstream max-size-buffers=1 ! videoconvertscale ! video/x-raw, chroma-site={color_range}, width={width}, height={height}, format=NV12, colorimetry={color_space}",
+				},
+				"vaapi": map[string]interface{}{
+					"video_params": "queue leaky=downstream max-size-buffers=1 ! videoconvertscale ! video/x-raw, chroma-site={color_range}, width={width}, height={height}, format=NV12, colorimetry={color_space}",
+				},
+			},
+			"av1_encoders": []map[string]interface{}{
+				{
+					"check_elements":   []string{"nvav1enc", "cudaconvertscale", "cudaupload"},
+					"encoder_pipeline": "nvav1enc gop-size=-1 bitrate={bitrate} rc-mode=cbr zerolatency=true preset=p1 tune=ultra-low-latency multi-pass=two-pass-quarter ! av1parse ! video/x-av1, stream-format=obu-stream, alignment=frame, profile=main",
+					"plugin_name":      "nvcodec",
+				},
+				{
+					"check_elements":   []string{"qsvav1enc", "videoconvertscale"},
+					"encoder_pipeline": "qsvav1enc gop-size=0 ref-frames=1 bitrate={bitrate} rate-control=cbr low-latency=1 target-usage=6 ! av1parse ! video/x-av1, stream-format=obu-stream, alignment=frame, profile=main",
+					"plugin_name":      "qsv",
+				},
+			},
+			"h264_encoders": []map[string]interface{}{
+				{
+					"check_elements":   []string{"nvh264enc", "cudaconvertscale", "cudaupload"},
+					"encoder_pipeline": "nvh264enc preset=low-latency-hq zerolatency=true gop-size=0 rc-mode=cbr-ld-hq bitrate={bitrate} aud=false ! h264parse ! video/x-h264, profile=main, stream-format=byte-stream",
+					"plugin_name":      "nvcodec",
+				},
+			},
+			"hevc_encoders": []map[string]interface{}{
+				{
+					"check_elements":   []string{"nvh265enc", "cudaconvertscale", "cudaupload"},
+					"encoder_pipeline": "nvh265enc gop-size=-1 bitrate={bitrate} aud=false rc-mode=cbr zerolatency=true preset=p1 tune=ultra-low-latency multi-pass=two-pass-quarter ! h265parse ! video/x-h265, profile=main, stream-format=byte-stream",
+					"plugin_name":      "nvcodec",
+				},
+			},
+		},
+	}
+
+	configMap := map[string]interface{}{
+		"config_version": 4,
+		"hostname":       "Direwolf",
+		"uuid":           "dd7c60f6-4b88-4ef1-be07-eeec72f96080",
+		"apps":           []any{config},
+
+		//!TODO: Send PR to wolf to populate the default gstreamer config
+		// if its not provided? Or start with empty wolf and use api to
+		// populate application
+		"gstreamer": gstreamerConfig,
+
+		//!TODO: Doesnt really matter since we handle moonlight. But
+		// we need a client to associate to streams. It would be better though
+		// to actually mirror the real moonlight clients into wolf via API
+		"paired_clients": []interface{}{
+			map[string]interface{}{
+				"app_state_folder": "state",
+				"client_cert": `-----BEGIN CERTIFICATE-----
+MIICvzCCAaegAwIBAgIBADANBgkqhkiG9w0BAQsFADAjMSEwHwYDVQQDDBhOVklE
+SUEgR2FtZVN0cmVhbSBDbGllbnQwHhcNMjQxMjE2MDgzMTE4WhcNNDQxMjExMDgz
+MTE4WjAjMSEwHwYDVQQDDBhOVklESUEgR2FtZVN0cmVhbSBDbGllbnQwggEiMA0G
+CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCXcEKK/Desa7EcvntGHxtA3ercOxbd
+kUtkPPacz7mKVZBKayZmbfTMAQV5dS2yqeyZOId+X4JEPO7DeuMkkr9INnvl3etB
+WIj0q8FTuBrGAb+XozFTb3Tvo3plezpLXecl4mquvXA2mEtVILnm6NltdJ+GYNkT
+UBbOjneZIdBfFjIP+0k2JZD+VmnxmwCDlPryMa2nFi8rNAkYSfIWdyIlOzUJfZ/i
+8Hw4wLtSGy5W7YZ3kbQQJzPkW6pLFbREcNmslprwxZduo3mDAyDndj9qsVqopJOF
+Oj3Nlzj53kNRozgB9b/wkNcxi3lvOoQrNGJNTp39WNDmPFVzfBvCKVDJAgMBAAEw
+DQYJKoZIhvcNAQELBQADggEBAA+Rh4KAuTYtcH8X5RdUstjGXiYbONMmEuKl/kE/
+hj8ddefXA4pjf1Vozx6NunMlC4g0QQAZrsxn1NBVe/5L3gxrwyYLn/2kDJUw7P5o
+aTXnL5xYzhcPjQOER9+36S4aUTpwR/rURK0MyOmZOVk3Ex4rAnyetKg3Dd9v6uL3
+zaycOje4fxJpVH713NbFaGLMeKPW61lW+Lh9WlXOKrd0EABVBPmSYlk8gYnPrXxA
+dxohk8q/MqUqcm/k8ZGKYMc998ix6ldXJm5xaPTXSQcSC/xycoLjnUCkcv+sfh1T
+nKI+KlDXa1HikPGT/uB/b+SS6v9bD8kU03Ci4ahdKb6Mw7Q=
+-----END CERTIFICATE-----
+`,
+			},
+		},
+	}
+
+	data, err := toml.Marshal(configMap)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal toml: %s", err)
+	}
+
+	return string(data), nil
 }
