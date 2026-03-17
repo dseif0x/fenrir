@@ -447,18 +447,20 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 	// at the old pod. It is very likely to happen before operator syncs and
 	// can create session, but perhaps should still check after operator returns
 	// the session URL.
-	if err := s.stopSessionsForUser(user, false); err != nil && !k8serrors.IsNotFound(err) {
+	if err := s.stopSessionsForUser(user, true); err != nil && !k8serrors.IsNotFound(err) {
 		writeErrorResponse(w, 500, fmt.Errorf("failed to stop existing sessions: %s", err))
 		return
 	}
+
+	sessionName := fmt.Sprintf("%s-%s", user.Name, app.Name)
 
 	klog.Infof("Launching app %s for user %s", app.ObjectMeta.Name, user.ObjectMeta.Name)
 	session, err := s.SessionClient.Create(
 		r.Context(),
 		&v1alpha1types.Session{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: fmt.Sprintf("%s-%s-", user.Name, app.Name),
-				Namespace:    pairing.Namespace,
+				Name:      sessionName,
+				Namespace: pairing.Namespace,
 				Labels: map[string]string{
 					"direwolf":      "true",
 					"direwolf/app":  app.ObjectMeta.Name,
