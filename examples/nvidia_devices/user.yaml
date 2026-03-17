@@ -9,8 +9,8 @@ spec:
   resources:
     limits:
       nvidia.com/gpu: "1"
-      cpu: 4000m
-      memory: 8G
+      cpu: 8000m
+      memory: 16G
     requests:
       nvidia.com/gpu: "1"
       cpu: 4000m

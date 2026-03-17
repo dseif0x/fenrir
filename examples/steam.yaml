@@ -61,17 +61,11 @@ spec:
           chown -R $PUID:$PGID /home/retro
           chmod -R 777 /home/retro
           exec /entrypoint.sh
-        volumeMounts:
-        - name: uinput
-          mountPath: /dev/uinput
-        - name: input-events
-          mountPath: /dev/input
-      volumes:
-      - name: uinput
-        hostPath:
-          path: /dev/uinput
-          type: CharDevice
-      - name: input-events
-        hostPath:
-          path: /dev/input
-          type: Directory
+#        volumeMounts:
+#        - name: input-events
+#          mountPath: /dev/input
+#      volumes:
+#      - name: input-events
+#        hostPath:
+#          path: /dev/input
+#          type: Directory
