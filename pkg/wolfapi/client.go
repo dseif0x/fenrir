@@ -24,7 +24,7 @@ type Session struct {
 	AESKey string `json:"aes_key"`
 	AESIV  string `json:"aes_iv"`
 
-	RTSPFakeIP string `json:"rtsp_fake_ip,omitempty"` 
+	RTSPFakeIP string `json:"rtsp_fake_ip,omitempty"`
 
 	// overrides
 	H264GSTPipeline string `json:"h264_gst_pipeline,omitempty"`
@@ -127,9 +127,6 @@ func (c *client) ListSessions(ctx context.Context) ([]Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Proto = "HTTP/1.0"
-	req.ProtoMajor = 1
-	req.ProtoMinor = 0
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -177,6 +174,7 @@ func (c *client) ListApps(ctx context.Context) ([]App, error) {
 	}
 	return appsResp.Apps, nil
 }
+
 // This is no longer used, I will probably remove it in the future
 // POST /api/v1/apps/add
 func (c *client) AddApp(ctx context.Context, app App) error {
@@ -305,6 +303,7 @@ type AppsResponse struct {
 }
 
 type WolfEventType string
+
 const (
 	PauseStreamEventType WolfEventType = "wolf::core::events::PauseStreamEvent"
 )

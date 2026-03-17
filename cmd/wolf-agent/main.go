@@ -120,23 +120,17 @@ func main() {
 			return
 		}
 		request, err := http.NewRequest(r.Method, url, r.Body)
+		request.Proto = r.Proto
+		request.ProtoMajor = r.ProtoMajor
+		request.ProtoMinor = r.ProtoMinor
+		request.TransferEncoding = r.TransferEncoding
+		request.ContentLength = r.ContentLength
 		if err != nil {
 			klog.ErrorS(err, "Failed to create proxy request")
 			http.Error(w, fmt.Sprintf("Failed to create proxy request: %v", err), http.StatusInternalServerError)
 			return
 		}
-
-		request.Proto = "HTTP/1.0"
-		request.ProtoMajor = 1
-		request.ProtoMinor = 0
-
-		// Copy headers but strip hop-by-hop headers that shouldn't be forwarded
 		request.Header = r.Header.Clone()
-		request.Header.Del("Transfer-Encoding") // Don't forward chunked TE
-		request.Header.Del("Connection")
-		request.Header.Del("Upgrade")
-
-		request.ContentLength = r.ContentLength
 
 		// Send the request to the wolf.sock
 		klog.Info("Sending request to wolf.sock:", request.Method, request.URL.Path)
@@ -148,15 +142,12 @@ func main() {
 		}
 		defer response.Body.Close()
 
-		klog.InfoS("Received response from wolf.sock", "statusCode", response.StatusCode)
-
 		// Write the response back to the client
 		for key, values := range response.Header {
 			for _, value := range values {
 				w.Header().Add(key, value)
 			}
 		}
-		klog.Info("Flushing headers to client")
 		w.WriteHeader(response.StatusCode)
 		flusher, ok := w.(http.Flusher)
 		if !ok {
@@ -164,13 +155,10 @@ func main() {
 			return
 		}
 
-		klog.Info("Streaming response body to client")
-
 		// Stream response body manually. io.Copy doesn't eagerly flush
 		// which breaks SSE stream.
 		buf := make([]byte, 4096)
 		for {
-			klog.Info("Reading from response body...")
 			n, err := response.Body.Read(buf)
 			if n > 0 {
 				_, writeErr := w.Write(buf[:n])
@@ -187,7 +175,6 @@ func main() {
 				klog.ErrorS(err, "Error reading from backend")
 				return
 			}
-			klog.InfoS("Read chunk from response body", "chunkSize", n)
 		}
 		klog.InfoS("Request completed", "statusCode", response.StatusCode)
 	})
@@ -214,9 +201,6 @@ func UnixHTTPClient(sockAddr string) http.Client {
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return net.Dial("unix", sockAddr)
 			},
-			DisableCompression:  true,
-			DisableKeepAlives:   true,
-			ForceAttemptHTTP2:   false,
 		},
 	}
 }
