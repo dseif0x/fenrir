@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"games-on-whales.github.io/direwolf/pkg/api/v1alpha1"
@@ -1696,10 +1697,10 @@ func (c *SessionController) reconcileActiveStreams(
 		}
 
 		sessionID, err := wolfclient.AddSession(ctx, wolfapi.Session{
-			VideoWidth:       session.Spec.Config.VideoWidth,
-			VideoHeight:      session.Spec.Config.VideoHeight,
-			VideoRefreshRate: session.Spec.Config.VideoRefreshRate,
-			// AppID:             appID,
+			VideoWidth:        session.Spec.Config.VideoWidth,
+			VideoHeight:       session.Spec.Config.VideoHeight,
+			VideoRefreshRate:  session.Spec.Config.VideoRefreshRate,
+			AppID:             strconv.Itoa(int(util.GenerateAppID(app.Spec.Title))),
 			AudioChannelCount: 2, // !TODO: parse from audio info
 
 			ClientIP: clientIP, // In the future, this will be acquired dynamically
@@ -1720,7 +1721,7 @@ func (c *SessionController) reconcileActiveStreams(
 			// add it. Though not really needed since user doesnt connect via HTTPS
 			// to wolf, we just need a client ID wolf accepts for this specific
 			// pairing/client...
-			// ClientID:   "4193251087262667199",
+			ClientID:   "4193251087262667199",
 			RTSPFakeIP: service.Spec.ClusterIP,
 		})
 
