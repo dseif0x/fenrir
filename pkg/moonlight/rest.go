@@ -498,12 +498,7 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 		// Session already exists. This can happen if the user tries to launch the same game twice in a row without closing the app, since we don't wait for the session to be fully cleaned up before launching a new one.
 		// We can just return the existing session URL in this case.
 		if foundSess.Status.StreamURL != "" {
-			parsedResourceVersion, err := strconv.Atoi(foundSess.ResourceVersion)
-			if err != nil {
-				writeErrorResponse(w, 500, fmt.Errorf("failed to parse resource version: %s", err))
-				return
-			}
-			sessionContent.ObjectMeta.ResourceVersion = strconv.Itoa(parsedResourceVersion + 1)
+			sessionContent.ObjectMeta.ResourceVersion = foundSess.ResourceVersion
 			_, err = s.SessionClient.Update(
 				r.Context(),
 				&sessionContent,
@@ -543,7 +538,7 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Wait for session to be created by the direwolf controller
 	var streamURL string
-	err = wait.PollUntilContextTimeout(r.Context(), 250*time.Millisecond, 25*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(r.Context(), 250*time.Millisecond, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		session, err := s.SessionClient.Get(ctx, session.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
