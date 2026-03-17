@@ -606,7 +606,7 @@ func (s *RESTServer) appAssetHandler(w http.ResponseWriter, r *http.Request) {
 
 	appAssetPString := string(app.Spec.AppAssetWebP)
 
-	rawData := app.Spec.AppAssetWebP
+	pngData := new(bytes.Buffer)
 	if strings.HasPrefix(appAssetPString, "http") {
 		klog.Infof("Downloading asset from %s", appAssetPString)
 		// If the asset is a URL, fetch it and return the response directly
@@ -622,19 +622,22 @@ func (s *RESTServer) appAssetHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		rawData, err = io.ReadAll(resp.Body)
-	}
+		_, err = io.Copy(pngData, resp.Body)
+		if err != nil {
+			klog.Infof("Failed to read app asset from URL response: %s", err)
+			return
+		}
+	} else {
+		img, err := webp.Decode(bytes.NewReader(app.Spec.AppAssetWebP))
+		if err != nil {
+			klog.Infof("Failed to decode webp: %s", err)
+			return
+		}
 
-	img, err := webp.Decode(bytes.NewReader(rawData))
-	if err != nil {
-		klog.Infof("Failed to decode webp: %s", err)
-		return
-	}
-
-	pngData := new(bytes.Buffer)
-	if err := png.Encode(pngData, img); err != nil {
-		klog.Infof("Failed to encode png: %s", err)
-		return
+		if err := png.Encode(pngData, img); err != nil {
+			klog.Infof("Failed to encode png: %s", err)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Length", strconv.Itoa(pngData.Len()))
