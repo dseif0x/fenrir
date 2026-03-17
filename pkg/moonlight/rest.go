@@ -505,7 +505,7 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Wait for session to be created by the direwolf controller
 	var streamURL string
-	err = wait.PollUntilContextTimeout(r.Context(), 250*time.Millisecond, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(r.Context(), 250*time.Millisecond, 10*time.Minute, true, func(ctx context.Context) (bool, error) {
 		session, err := s.SessionClient.Get(ctx, session.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
