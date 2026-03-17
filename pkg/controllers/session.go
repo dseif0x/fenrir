@@ -549,8 +549,8 @@ func (c *SessionController) reconcileService(ctx context.Context, session *v1alp
 				WithAnnotations(map[string]string{
 					// Try to support popular service LoadBalancer implementation
 					// sharing key annotations.
-					"lbipam.cilium.io/sharing-key":        c.LBSharingKey,
-					"metallb.io/allow-shared-ip": c.LBSharingKey,
+					"lbipam.cilium.io/sharing-key": c.LBSharingKey,
+					"metallb.io/allow-shared-ip":   c.LBSharingKey,
 				}).
 				WithLabels(
 					map[string]string{
@@ -761,7 +761,7 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 		"PULSE_SERVER":           "unix:/tmp/.X11-unix/pulse-socket",
 		"HOST_APPS_STATE_FOLDER": "/mnt/data/wolf",
 		// "WOLF_STREAM_CLIENT_IP":  "10.128.1.0", //Need to find the correct streaming id / ingress, later.
-		"WOLF_SOCKET_PATH":       "/etc/wolf/wolf.sock", 
+		"WOLF_SOCKET_PATH": "/etc/wolf/wolf.sock",
 		// "WOLF_CFG_FILE":          "/etc/wolf/cfg/config.toml", // no longer needed
 		// "WOLF_PRIVATE_CERT_FILE": "/mnt/data/wolf/cfg/cert.pem",
 		// "WOLF_PRIVATE_KEY_FILE": "/mnt/data/wolf/cfg/key.pem",
@@ -827,8 +827,7 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 	wolfEnvVarsSlice := make([]corev1.EnvVar, 0, len(wolfEnvVars))
 	for k, v := range wolfEnvVars {
 		wolfEnvVarsSlice = append(wolfEnvVarsSlice, corev1.EnvVar{Name: k, Value: v})
- 	}
-
+	}
 
 	// Inject volume mounts into existing containers
 	for i := range podToCreate.Spec.Containers {
@@ -852,7 +851,7 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 			{Name: "WAYLAND_DISPLAY", Value: "wayland-1"},
 			{Name: "TZ", Value: wolfEnvVars["TZ"]},
 			{Name: "UNAME", Value: "retro"},
-			{Name: "XDG_RUNTIME_DIR", Value: "/tmp/.X11-unix"},			// "UID":             "1000",
+			{Name: "XDG_RUNTIME_DIR", Value: "/tmp/.X11-unix"}, // "UID":             "1000",
 			// "GID":             "1000",
 			{Name: "PULSE_SERVER", Value: "unix:/tmp/.X11-unix/pulse-socket"},
 			// PULSE_SINK & PULSE_SOURCE set at runtime calculated based off session ID.
@@ -1017,8 +1016,8 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 
 	podToCreate.Spec.Containers = append(podToCreate.Spec.Containers,
 		corev1.Container{
-			Name:  "wolf-agent",
-			Image: c.WolfAgentImage,
+			Name:            "wolf-agent",
+			Image:           c.WolfAgentImage,
 			ImagePullPolicy: corev1.PullAlways,
 			// ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
@@ -1032,47 +1031,47 @@ func (c *SessionController) reconcilePod(ctx context.Context, session *v1alpha1t
 				},
 			},
 			Env: append([]corev1.EnvVar{
-					{
-						Name:  "XDG_RUNTIME_DIR",
-						Value: "/tmp/.X11-unix",
-					},
-					// {
-					// 	Name:  "PUID",
-					// 	Value: "1000",
-					// },
-					// {
-					// 	Name:  "PGID",
-					// 	Value: "1000",
-					// },
-					{
-						Name:  "WOLF_SOCKET_PATH",
-						Value: "/etc/wolf/wolf.sock",
-					},
-					{
-						Name:  "DIREWOLF_USER",
-						Value: session.Spec.UserReference.Name,
-					},
-					{
-						Name:  "DIREWOLF_APP",
-						Value: session.Spec.GameReference.Name,
-					},
-					{
-						Name: "POD_NAME",
-						ValueFrom: &corev1.EnvVarSource{
-							FieldRef: &corev1.ObjectFieldSelector{
-								FieldPath: "metadata.name",
-							},
+				{
+					Name:  "XDG_RUNTIME_DIR",
+					Value: "/tmp/.X11-unix",
+				},
+				// {
+				// 	Name:  "PUID",
+				// 	Value: "1000",
+				// },
+				// {
+				// 	Name:  "PGID",
+				// 	Value: "1000",
+				// },
+				{
+					Name:  "WOLF_SOCKET_PATH",
+					Value: "/etc/wolf/wolf.sock",
+				},
+				{
+					Name:  "DIREWOLF_USER",
+					Value: session.Spec.UserReference.Name,
+				},
+				{
+					Name:  "DIREWOLF_APP",
+					Value: session.Spec.GameReference.Name,
+				},
+				{
+					Name: "POD_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: "metadata.name",
 						},
 					},
-					{
-						Name: "POD_NAMESPACE",
-						ValueFrom: &corev1.EnvVarSource{
-							FieldRef: &corev1.ObjectFieldSelector{
-								FieldPath: "metadata.namespace",
-							},
+				},
+				{
+					Name: "POD_NAMESPACE",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: "metadata.namespace",
 						},
 					},
-				},wolfAgentEnv...
+				},
+			}, wolfAgentEnv...,
 			),
 			ReadinessProbe: &corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{
@@ -1564,14 +1563,17 @@ func (c *SessionController) reconcileActiveStreams(
 	// In the future it might make sense to just match on ClientID/ClientCertFingerprint
 	// but that is hardcoded for now :)
 	wolfclient := wolfapi.NewClient(fmt.Sprintf("https://%s:8443", service.Spec.ClusterIP), &http.Client{
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DisableCompression:  true,
-			DisableKeepAlives:   true,
-			ForceAttemptHTTP2:   false,
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			DisableCompression: true,
+			DisableKeepAlives:  true,
+			ForceAttemptHTTP2:  false,
 		},
 	})
-	sessions, err := wolfclient.ListSessions(ctx)
+	wolfCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	sessions, err := wolfclient.ListSessions(wolfCtx)
 	if err != nil {
 		return fmt.Errorf("failed to list sessions: %s", err)
 	}
@@ -1694,9 +1696,9 @@ func (c *SessionController) reconcileActiveStreams(
 		}
 
 		sessionID, err := wolfclient.AddSession(ctx, wolfapi.Session{
-			VideoWidth:        session.Spec.Config.VideoWidth,
-			VideoHeight:       session.Spec.Config.VideoHeight,
-			VideoRefreshRate:  session.Spec.Config.VideoRefreshRate,
+			VideoWidth:       session.Spec.Config.VideoWidth,
+			VideoHeight:      session.Spec.Config.VideoHeight,
+			VideoRefreshRate: session.Spec.Config.VideoRefreshRate,
 			// AppID:             appID,
 			AudioChannelCount: 2, // !TODO: parse from audio info
 
