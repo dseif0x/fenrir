@@ -1739,7 +1739,7 @@ func (c *SessionController) reconcileActiveStreams(
 		// assert wolf session ID non-empty and matches what we expect
 	}
 
-	session.Status.StreamURL = fmt.Sprintf("rtsp://%s:%d", service.Spec.ClusterIP, session.Status.Ports.RTSP)
+	session.Status.StreamURL = fmt.Sprintf("rtsp://%s:%d", service.Status.LoadBalancer.Ingress[0].IP, session.Status.Ports.RTSP)
 	return nil
 }
 
