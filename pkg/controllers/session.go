@@ -1724,7 +1724,7 @@ func (c *SessionController) reconcileActiveStreams(
 			// to wolf, we just need a client ID wolf accepts for this specific
 			// pairing/client...
 			ClientID:   "4193251087262667199",
-			RTSPFakeIP: "10.42.0.0",
+			RTSPFakeIP: "0.0.0.0",
 		})
 
 		klog.Infof("LB ID: %s", service.Status.LoadBalancer.Ingress[0].IP)
