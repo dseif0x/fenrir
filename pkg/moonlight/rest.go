@@ -604,7 +604,28 @@ func (s *RESTServer) appAssetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	w.WriteHeader(200)
 
-	img, err := webp.Decode(bytes.NewReader(app.Spec.AppAssetWebP))
+	appAssetPString := string(app.Spec.AppAssetWebP)
+
+	rawData := app.Spec.AppAssetWebP
+	if strings.HasPrefix(appAssetPString, "http") {
+		klog.Infof("Downloading asset from %s", appAssetPString)
+		// If the asset is a URL, fetch it and return the response directly
+		resp, err := http.Get(appAssetPString)
+		if err != nil {
+			klog.Infof("Failed to fetch app asset from URL: %s", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			klog.Infof("Failed to fetch app asset from URL, status code: %d", resp.StatusCode)
+			return
+		}
+
+		rawData, err = io.ReadAll(resp.Body)
+	}
+
+	img, err := webp.Decode(bytes.NewReader(rawData))
 	if err != nil {
 		klog.Infof("Failed to decode webp: %s", err)
 		return
