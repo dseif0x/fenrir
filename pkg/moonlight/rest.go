@@ -498,6 +498,18 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 		// Session already exists. This can happen if the user tries to launch the same game twice in a row without closing the app, since we don't wait for the session to be fully cleaned up before launching a new one.
 		// We can just return the existing session URL in this case.
 		if foundSess.Status.StreamURL != "" {
+			_, err := s.SessionClient.Update(
+				r.Context(),
+				&sessionContent,
+				metav1.UpdateOptions{
+					FieldManager: "direwolf-launch",
+				},
+			)
+			if err != nil {
+				writeErrorResponse(w, 500, fmt.Errorf("failed to update existing session: %s", err))
+				return
+			}
+
 			sendXML(w, LaunchResponse{
 				Response: Response{
 					StatusCode: 200,
