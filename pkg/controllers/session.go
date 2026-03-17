@@ -1700,7 +1700,7 @@ func (c *SessionController) reconcileActiveStreams(
 			VideoWidth:        session.Spec.Config.VideoWidth,
 			VideoHeight:       session.Spec.Config.VideoHeight,
 			VideoRefreshRate:  session.Spec.Config.VideoRefreshRate,
-			AppID:             strconv.Itoa(app.Spec.ID),
+			AppID:             strconv.Itoa(int(util.GenerateAppID(app.Spec.Title))),
 			AudioChannelCount: 2, // !TODO: parse from audio info
 
 			ClientIP: clientIP, // In the future, this will be acquired dynamically
