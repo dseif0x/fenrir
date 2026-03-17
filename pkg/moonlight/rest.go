@@ -498,7 +498,13 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 		// Session already exists. This can happen if the user tries to launch the same game twice in a row without closing the app, since we don't wait for the session to be fully cleaned up before launching a new one.
 		// We can just return the existing session URL in this case.
 		if foundSess.Status.StreamURL != "" {
-			_, err := s.SessionClient.Update(
+			parsedResourceVersion, err := strconv.Atoi(foundSess.ResourceVersion)
+			if err != nil {
+				writeErrorResponse(w, 500, fmt.Errorf("failed to parse resource version: %s", err))
+				return
+			}
+			sessionContent.ObjectMeta.ResourceVersion = strconv.Itoa(parsedResourceVersion + 1)
+			_, err = s.SessionClient.Update(
 				r.Context(),
 				&sessionContent,
 				metav1.UpdateOptions{
