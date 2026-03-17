@@ -452,7 +452,7 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 	//	return
 	//}
 
-	sessionName := fmt.Sprintf("%s-%s-", user.Name, app.Name)
+	sessionName := fmt.Sprintf("%s-%s", user.Name, app.Name)
 	sessionContent := v1alpha1types.Session{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sessionName,
