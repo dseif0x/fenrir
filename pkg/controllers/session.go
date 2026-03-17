@@ -571,7 +571,6 @@ func (c *SessionController) reconcileService(ctx context.Context, session *v1alp
 				WithSpec(
 					v1ac.ServiceSpec().
 						WithType(corev1.ServiceTypeLoadBalancer).
-						WithExternalTrafficPolicy(corev1.ServiceExternalTrafficPolicyTypeLocal).
 						WithSelector(
 							map[string]string{
 								"direwolf/app":  session.Spec.GameReference.Name,
