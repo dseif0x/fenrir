@@ -3,22 +3,22 @@
 apiVersion: direwolf.games-on-whales.github.io/v1alpha1
 kind: App
 metadata:
-  name: firefox
+  name: prism
   namespace: fenrir
 spec:
-  appAssetWebP: aHR0cHM6Ly93d3cudmh2LnJzL2RwbmcvZC80NzctNDc3NjE2MF9tb3ppbGxhLWZpcmVmb3gtbG9nby1wbmctdHJhbnNwYXJlbnQtcG5nLnBuZw==
-  id: 1
+  appAssetWebP: aHR0cHM6Ly9wbmcucG5ndHJlZS5jb20vcG5nLXZlY3Rvci8yMDI1MDMxNy9vdXJsYXJnZS9wbmd0cmVlLXRyYW5zcGFyZW50LXByaXNtLXJlZmxlY3RpbmctYS1zcGVjdHJ1bS1vZi1jb2xvcnMtcG5nLWltYWdlXzE1NzYzMTc4LnBuZw==
+  id: 3
   isHDRSupported: false
-  title: Firefox
-  ##This will automatically provision storage with the default parameters
-  volumeClaimTemplate: 
-     spec: 
-        storageClassName: nfs-fast
+  title: WolfPrism
+  volumeClaimTemplate:
+    spec:
+      storageClassName: local-path
       ## Change this into the card id of your device, or comment it out and let wolf find it.
       #renderNode: /dev/dri/renderD128
       # clientIP: 10.244.1.1
   template:
     spec:
+      hostIPC: true
       runtimeClassName: nvidia
       tolerations:
         - key: "nvidia.com/gpu"
@@ -26,7 +26,7 @@ spec:
           effect: NoSchedule
       containers:
       - name: app
-        image: ghcr.io/games-on-whales/firefox:edge
+        image: ghcr.io/games-on-whales/prismlauncher:edge
         resources:
           limits:
             nvidia.com/gpu: "1"
@@ -36,6 +36,16 @@ spec:
             nvidia.com/gpu: "1"
             cpu: 2000m
             memory: 4G
+        securityContext:
+          capabilities:
+            add: ["NET_RAW", "MKNOD", "NET_ADMIN"]
+        env:
+        - name: RUN_SWAY
+          value: "true"
+        - name: PROTON_LOG
+          value: "1"
+        - name: GOW_REQUIRED_DEVICES
+          value: "/dev/input/* /dev/dri/* /dev/nvidia*"
         command:
         - /bin/bash
         - -c
@@ -59,4 +69,24 @@ spec:
 
           export PULSE_SINK="$(pactl list sinks short | awk '$2 ~ /^virtual_sink/ {print $2; exit}')"
           export PULSE_SOURCE="${PULSE_SINK}.monitor"
+          # while true; do
+          #   sleep 1
+          # done
+
+          chown -R $PUID:$PGID /home/retro
+          chmod -R 777 /home/retro
           exec /entrypoint.sh
+        volumeMounts:
+          - name: input-events
+            mountPath: /dev/input
+          - name: shm
+            mountPath: /dev/shm
+      volumes:
+        - name: input-events
+          hostPath:
+            path: /dev/input
+            type: Directory
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Gi
