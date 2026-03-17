@@ -447,86 +447,53 @@ func (s *RESTServer) launchHandler(w http.ResponseWriter, r *http.Request) {
 	// at the old pod. It is very likely to happen before operator syncs and
 	// can create session, but perhaps should still check after operator returns
 	// the session URL.
-	//if err := s.stopSessionsForUser(user, false); err != nil && !k8serrors.IsNotFound(err) {
-	//	writeErrorResponse(w, 500, fmt.Errorf("failed to stop existing sessions: %s", err))
-	//	return
-	//}
-
-	sessionName := fmt.Sprintf("%s-%s", user.Name, app.Name)
-	sessionContent := v1alpha1types.Session{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      sessionName,
-			Namespace: pairing.Namespace,
-			Labels: map[string]string{
-				"direwolf":      "true",
-				"direwolf/app":  app.ObjectMeta.Name,
-				"direwolf/user": user.ObjectMeta.Name,
-			},
-			Annotations: map[string]string{
-				"direwolf/pairing": pairing.ObjectMeta.Name,
-			},
-		},
-		Spec: v1alpha1types.SessionSpec{
-			GameReference: v1alpha1types.GameReference{
-				Name: app.ObjectMeta.Name,
-			},
-			PairingReference: v1alpha1types.PairingReference{
-				Name: pairing.ObjectMeta.Name,
-			},
-			UserReference: v1alpha1types.UserReference{
-				Name: user.ObjectMeta.Name,
-			},
-			//!TODO: Unused. v1alpha2 Gateway types are not widely supported
-			GatewayReference: v1alpha1types.GatewayReference{
-				Name:      "unused",
-				Namespace: "unused",
-			},
-			Config: v1alpha1types.SessionInfo{
-				ClientIP:           clientIP,
-				AESIV:              rikeyID,
-				AESKey:             rikey,
-				SurroundAudioFlags: surroundFlags,
-				VideoWidth:         width,
-				VideoHeight:        height,
-				VideoRefreshRate:   refreshRate,
-			},
-		},
+	if err := s.stopSessionsForUser(user, false); err != nil && !k8serrors.IsNotFound(err) {
+		writeErrorResponse(w, 500, fmt.Errorf("failed to stop existing sessions: %s", err))
+		return
 	}
-
-	foundSess, err := s.SessionClient.Get(r.Context(), sessionName, metav1.GetOptions{})
-	if err == nil {
-		// Session already exists. This can happen if the user tries to launch the same game twice in a row without closing the app, since we don't wait for the session to be fully cleaned up before launching a new one.
-		// We can just return the existing session URL in this case.
-		if foundSess.Status.StreamURL != "" {
-			sessionContent.ObjectMeta.ResourceVersion = foundSess.ResourceVersion
-			_, err = s.SessionClient.Update(
-				r.Context(),
-				&sessionContent,
-				metav1.UpdateOptions{
-					FieldManager: "direwolf-launch",
-				},
-			)
-			if err != nil {
-				writeErrorResponse(w, 500, fmt.Errorf("failed to update existing session: %s", err))
-				return
-			}
-
-			sendXML(w, LaunchResponse{
-				Response: Response{
-					StatusCode: 200,
-				},
-				RTSPSessionURL: foundSess.Status.StreamURL,
-				GameSession:    1,
-			})
-			return
-		}
-	}
-	// If session exists but doesn't have a stream URL yet, we can wait for it to be updated by the controller and return the URL once it's ready.
 
 	klog.Infof("Launching app %s for user %s", app.ObjectMeta.Name, user.ObjectMeta.Name)
 	session, err := s.SessionClient.Create(
 		r.Context(),
-		&sessionContent,
+		&v1alpha1types.Session{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: fmt.Sprintf("%s-%s-", user.Name, app.Name),
+				Namespace:    pairing.Namespace,
+				Labels: map[string]string{
+					"direwolf":      "true",
+					"direwolf/app":  app.ObjectMeta.Name,
+					"direwolf/user": user.ObjectMeta.Name,
+				},
+				Annotations: map[string]string{
+					"direwolf/pairing": pairing.ObjectMeta.Name,
+				},
+			},
+			Spec: v1alpha1types.SessionSpec{
+				GameReference: v1alpha1types.GameReference{
+					Name: app.ObjectMeta.Name,
+				},
+				PairingReference: v1alpha1types.PairingReference{
+					Name: pairing.ObjectMeta.Name,
+				},
+				UserReference: v1alpha1types.UserReference{
+					Name: user.ObjectMeta.Name,
+				},
+				//!TODO: Unused. v1alpha2 Gateway types are not widely supported
+				GatewayReference: v1alpha1types.GatewayReference{
+					Name:      "unused",
+					Namespace: "unused",
+				},
+				Config: v1alpha1types.SessionInfo{
+					ClientIP:           clientIP,
+					AESIV:              rikeyID,
+					AESKey:             rikey,
+					SurroundAudioFlags: surroundFlags,
+					VideoWidth:         width,
+					VideoHeight:        height,
+					VideoRefreshRate:   refreshRate,
+				},
+			},
+		},
 		metav1.CreateOptions{
 			FieldManager: "direwolf-launch",
 		},
