@@ -1724,8 +1724,10 @@ func (c *SessionController) reconcileActiveStreams(
 			// to wolf, we just need a client ID wolf accepts for this specific
 			// pairing/client...
 			ClientID:   "4193251087262667199",
-			RTSPFakeIP: service.Spec.LoadBalancerIP,
+			RTSPFakeIP: service.Status.LoadBalancer.Ingress[0].IP,
 		})
+
+		klog.Infof("LB ID: %s", service.Status.LoadBalancer.Ingress[0].IP)
 
 		if err != nil {
 			return fmt.Errorf("failed to create session: %s", err)
